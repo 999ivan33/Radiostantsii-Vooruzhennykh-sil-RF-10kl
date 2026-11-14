@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ОБЗР: Переносные радиостанции (10 класс)</title>
+  <style>
+    /* =========================================================
+       1. СБРОС И ЗАПРЕТ ВЫДЕЛЕНИЯ / КОПИРОВАНИЯ
+       ========================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+    }
+
+    body {
+      background-color: #070d14;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
+      overflow-x: hidden;
+      touch-action: pan-y;
+    }
+
+    /* Тактический радарный фон (Radar HUD Grid) */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 8%, rgba(0, 229, 255, 0.14), transparent 55%),
+        radial-gradient(circle at 85% 92%, rgba(16, 185, 129, 0.11), transparent 50%),
+        linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 26px 26px, 26px 26px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =========================================================
+       2. ТЕМАТИЧЕСКИЙ КАРКАС (TACTICAL RADAR HUD)
+       ========================================================= */
+    .app-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+      background: #0c1520;
+      border: 1px solid #1b3147;
+      border-radius: 14px;
+      box-shadow: 0 16px 44px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(0, 229, 255, 0.12);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1b3147;
+    }
+
+    .badge-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 229, 255, 0.12);
+      color: #00e5ff;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 4px 9px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 229, 255, 0.35);
+    }
+
+    .counter-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #8fa8c2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 5px;
+      background: #142334;
+      border-radius: 99px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #00e5ff);
+      box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+      transition: width 0.25s ease;
+    }
+
+    /* =========================================================
+       3. STEP-BY-STEP АККОРДЕОН (ПОШАГОВОЕ ПЕРЕКРЫТИЕ)
+       ========================================================= */
+    .accordion-step-box {
+      min-height: 255px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .step-section {
+      display: none;
+      animation: fadeIn 0.15s ease forwards;
+    }
+
+    .step-section.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .phase-badge {
+      font-size: 11px;
+      color: #7dd3fc;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .question-heading {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #f8fafc;
+      background: #111e2d;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #1e3750;
+      margin-bottom: 16px;
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      margin-bottom: 14px;
+    }
+
+    .option-item {
+      background: #111e2d;
+      border: 1px solid #1e3750;
+      border-radius: 9px;
+      padding: 13px 14px;
+      font-size: 13.5px;
+      line-height: 1.35;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.12s ease, border-color 0.12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .option-item:active, .option-item.tapped {
+      background: #0284c7 !important;
+      border-color: #00e5ff !important;
+      color: #ffffff !important;
+    }
+
+    .option-letter {
+      width: 23px;
+      height: 23px;
+      border-radius: 5px;
+      background: #172a3e;
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #00e5ff;
+      flex-shrink: 0;
+    }
+
+    .btn-step {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #ffffff;
+      border: 1px solid rgba(0, 229, 255, 0.45);
+      border-radius: 9px;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0, 229, 255, 0.25);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-step:active {
+      background: #075985;
+    }
+
+    .btn-step-back {
+      background: #142334;
+      color: #8fa8c2;
+      border: 1px solid #223b54;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    /* =========================================================
+       4. АППАРАТНЫЙ БЛЭКАУТ ПРИ ПОПЫТКЕ СКРИНШОТА / СВОРАЧИВАНИЯ
+       ========================================================= */
+    #blackout-shield {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      z-index: 999999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .blackout-icon { font-size: 46px; margin-bottom: 12px; }
+    .blackout-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ef4444;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .blackout-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.45;
+      max-width: 380px;
+    }
+
+    /* =========================================================
+       5. ЭКРАН РЕЗУЛЬТАТОВ И ОЦЕНИВАНИЯ
+       ========================================================= */
+    .screen-view { display: none; }
+    .screen-view.current { display: block; }
+
+    .result-content { text-align: center; padding: 12px 4px; }
+
+    .mark-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 800;
+      border: 3px solid;
+    }
+
+    .mark-5 { color: #10b981; border-color: #10b981; background: rgba(16, 185, 129, 0.14); }
+    .mark-4 { color: #00e5ff; border-color: #00e5ff; background: rgba(0, 229, 255, 0.14); }
+    .mark-3 { color: #f59e0b; border-color: #f59e0b; background: rgba(245, 158, 11, 0.14); }
+    .mark-2 { color: #ef4444; border-color: #ef4444; background: rgba(239, 68, 68, 0.14); }
+
+    .score-title { font-size: 18px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+    .score-percent { font-size: 13px; color: #8fa8c2; margin-bottom: 14px; }
+
+    .analysis-card {
+      background: #111e2d;
+      border: 1px solid #1e3750;
+      border-radius: 9px;
+      padding: 13px;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+    }
+
+    .action-btn {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border: 1px solid rgba(0, 229, 255, 0.45);
+      padding: 12px 20px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="blackout-shield">
+  <div class="blackout-icon">📡</div>
+  <div class="blackout-title">Фиксация экрана запрещена!</div>
+  <div class="blackout-desc">
+    Обнаружена попытка создания скриншота, свайп шторки или переключение окна.<br><br>
+    <strong>Текущий вопрос аннулирован (0 баллов).</strong><br>
+    Выполняется переход к следующему заданию...
+  </div>
+</div>
+
+<div class="app-card">
+
+  <div id="test-screen" class="screen-view current">
+    <div class="top-meta">
+      <span class="badge-label">📡 ОБЗР • 10 КЛАСС</span>
+      <span id="q-counter" class="counter-text">Вопрос 1 из 20</span>
+    </div>
+
+    <div class="progress-bar-bg">
+      <div id="p-bar" class="progress-bar-fill"></div>
+    </div>
+
+    <div class="accordion-step-box">
+      <!-- ЭТАП 1: ТОЛЬКО ВОПРОС -->
+      <div id="step-question" class="step-section active">
+        <div class="phase-badge">Шаг 1 из 2 • Изучите условие</div>
+        <h2 id="q-text" class="question-heading">Загрузка задания...</h2>
+        <button id="btn-to-options" class="btn-step" type="button">
+          <span>Перейти к вариантам ответов</span> ➔
+        </button>
+      </div>
+
+      <!-- ЭТАП 2: ТОЛЬКО ОТВЕТЫ -->
+      <div id="step-options" class="step-section">
+        <div class="phase-badge">Шаг 2 из 2 • Выберите вариант</div>
+        <div id="options-box" class="options-list"></div>
+        <button id="btn-back-to-q" class="btn-step-back" type="button">
+          ⬅ Вернуться к чтению вопроса
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result-screen" class="screen-view">
+    <div class="result-content">
+      <div id="mark-circle" class="mark-circle">5</div>
+      <div id="score-text" class="score-title">20 из 20 верно</div>
+      <div id="percent-text" class="score-percent">100% правильных ответов</div>
+
+      <div class="analysis-card">
+        <strong>Аналитическое заключение:</strong>
+        <p id="analysis-text" style="margin-top: 5px;"></p>
+      </div>
+
+      <button class="action-btn" onclick="location.reload()">Пройти еще раз</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   БАНК ИЗ 40 ВОПРОСОВ:
+   «Переносные радиостанции: предназначение, устройство, ТТХ (10 класс)»
+   ========================================================= */
+const questionBank = [
+  {
+    q: "С чем образно сравнивают радиосвязь в тактическом подразделении?",
+    a: ["С нервной системой живого организма", "С запасным колесом грузового автомобиля", "С тяжелой броней боевого танка", "С бумажной картой незнакомого города"],
+    correct: "С нервной системой живого организма"
+  },
+  {
+    q: "Какую главную задачу решает переносная радиостанция для командира?",
+    a: ["Мгновенное управление бойцами на расстоянии", "Измерение скорости встречного сильного ветра", "Приготовление горячей пищи в поле", "Зарядку аккумуляторов тяжелых боевых машин"],
+    correct: "Мгновенное управление бойцами на расстоянии"
+  },
+  {
+    q: "Что такое современные армейские цифровые радиостанции шестого поколения?",
+    a: ["Защищенные тактические мини-компьютеры для связи", "Обычные бытовые приемники городских новостей", "Простые фонарики для ночного ориентирования", "Приборы для измерения давления воздуха"],
+    correct: "Защищенные тактические мини-компьютеры для связи"
+  },
+  {
+    q: "Какие данные кроме речи передают современные цифровые станции?",
+    a: ["Текстовые сообщения и координаты карты", "Только сигналы точного московского времени", "Прогноз погоды на следующий год", "Расписание движения пригородных электропоездов"],
+    correct: "Текстовые сообщения и координаты карты"
+  },
+  {
+    q: "Для чего соседние группы используют радиосвязь во время боя?",
+    a: ["Для согласования действий и прикрытия флангов", "Для обсуждения последних спортивных новостей", "Для заказа продуктов на полевую кухню", "Для проверки знания школьной программы"],
+    correct: "Для согласования действий и прикрытия флангов"
+  },
+  {
+    q: "Каким способом современная радиостанция предупреждает бойца при отключенном звуке?",
+    a: ["Вибрацией корпуса и сигналом на экране", "Громким хлопком крышки батарейного отсека", "Резким нагревом металлической верхней антенны", "Быстрым миганием фонаря на каске"],
+    correct: "Вибрацией корпуса и сигналом на экране"
+  },
+  {
+    q: "Что произойдет с отрядом при полной потере радиосвязи?",
+    a: ["Подразделение потеряет управление и слаженность действий", "Бойцы начнут двигаться в два раза быстрее", "Дальность стрельбы оружия заметно увеличится", "Противник сразу прекратит наблюдение за местностью"],
+    correct: "Подразделение потеряет управление и слаженность действий"
+  },
+  {
+    q: "Какую роль выполняет радиосвязь в системе безопасности подразделения?",
+    a: ["Мгновенно оповещает бойцов об обнаруженной угрозе", "Защищает бронежилет от попадания осколков", "Очищает питьевую воду в полевых условиях", "Освещает дорогу в темном густом лесу"],
+    correct: "Мгновенно оповещает бойцов об обнаруженной угрозе"
+  },
+  {
+    q: "Сколько базовых модулей входит в устройство переносной радиостанции?",
+    a: ["Пять основных функциональных технических модулей", "Ровно двадцать пять отдельных независимых блоков", "Всего один стеклянный экран без батареи", "Десять сменных колес для перевозки"],
+    correct: "Пять основных функциональных технических модулей"
+  },
+  {
+    q: "Какой элемент радиостанции преобразует электрический ток в радиоволны?",
+    a: ["Выносная или штыревая антенна станции", "Защитная резиновая заглушка разъема питания", "Пластиковая клипса для крепления на ремень", "Литий-ионная аккумуляторная батарея внизу корпуса"],
+    correct: "Выносная или штыревая антенна станции"
+  },
+  {
+    q: "Как нужно располагать антенну станции для максимальной дальности связи?",
+    a: ["Строго вертикально вверх без сильного наклона", "Горизонтально на поверхности сырой холодной земли", "Плотно прижав к металлическому корпусу машины", "Свернув в тугое кольцо внутри рюкзака"],
+    correct: "Строго вертикально вверх без сильного наклона"
+  },
+  {
+    q: "Какой блок называют «цифровым мозгом» современной радиостанции?",
+    a: ["Приёмопередатчик внутри ударопрочного герметичного корпуса", "Тканевый чехол для переноски на поясе", "Запасной винт крепления крышки аккумулятора", "Металлический карабин для подвески на разгрузку"],
+    correct: "Приёмопередатчик внутри ударопрочного герметичного корпуса"
+  },
+  {
+    q: "Какой элемент обеспечивает автономное питание станции в полевых условиях?",
+    a: ["Съемная аккумуляторная батарея высокой емкости", "Стеклянный защитный экран навигационного дисплея", "Гибкий резиновый корпус штыревой антенны", "Кнопка переключения рабочих каналов связи"],
+    correct: "Съемная аккумуляторная батарея высокой емкости"
+  },
+  {
+    q: "До какой отрицательной температуры работают современные армейские аккумуляторы?",
+    a: ["До минус тридцати — сорока градусов", "Только до плюс десяти градусов тепла", "Исключительно при комнатной температуре в штабе", "Не ниже нуля градусов по Цельсию"],
+    correct: "До минус тридцати — сорока градусов"
+  },
+  {
+    q: "Как расшифровывается название главной кнопки передачи PTT?",
+    a: ["Нажми и говори (Push-to-Talk)", "Выключи питание станции (Power-Off)", "Включи фонарик ночью (Light-On)", "Очисти память экрана (Clear-All)"],
+    correct: "Нажми и говори (Push-to-Talk)"
+  },
+  {
+    q: "В какой режим переходит радиостанция при нажатии и удержании тангенты PTT?",
+    a: ["В режим передачи сигнала в эфир", "В режим полной разрядки аккумуляторной батареи", "В режим автоматического отключения дисплея", "В режим приема входящих текстовых сообщений"],
+    correct: "В режим передачи сигнала в эфир"
+  },
+  {
+    q: "Что отображается на контрастном дисплее цифровой переносной радиостанции?",
+    a: ["Заряд батареи, номер канала и координаты", "Только дата рождения владельца радиостанции", "Расписание уроков и школьные оценки", "Температура воды в ближайшей горной реке"],
+    correct: "Заряд батареи, номер канала и координаты"
+  },
+  {
+    q: "Что означает аббревиатура ТТХ в технической подготовке?",
+    a: ["Тактико-технические характеристики радиостанции", "Тайные таблицы шифрования сообщений", "Текущие тренировки химической защиты", "Точные траектории холостых выстрелов"],
+    correct: "Тактико-технические характеристики радиостанции"
+  },
+  {
+    q: "В каких единицах измеряется рабочая частота радиостанции?",
+    a: ["В мегагерцах (МГц) и килогерцах", "В килограммах и граммах веса", "В литрах и кубических метрах", "В градусах угла наклона антенны"],
+    correct: "В мегагерцах (МГц) и килогерцах"
+  },
+  {
+    q: "Какой диапазон волн чаще используют для связи внутри подразделения на ближней дистанции?",
+    a: ["Ультракороткие волны (УКВ диапазон)", "Длинные подводные акустические волны", "Сверхдлинные космические радиоволны", "Инфракрасные тепловые лучи солнца"],
+    correct: "Ультракороткие волны (УКВ диапазон)"
+  },
+  {
+    q: "Как рельеф местности влияет на дальность работы переносной радиостанции?",
+    a: ["Лес, горы и овраги уменьшают дальность", "Плотные стены увеличивают дальность втрое", "Глубокий овраг улучшает прохождение радиоволн", "Рельеф местности никак не влияет"],
+    correct: "Лес, горы и овраги уменьшают дальность"
+  },
+  {
+    q: "В каких единицах измеряется выходная мощность передатчика?",
+    a: ["В ваттах (Вт) излучаемой мощности", "В метрах длины выносной антенны", "В часах непрерывной ночной работы", "В километрах пройденного пешего маршрута"],
+    correct: "В ваттах (Вт) излучаемой мощности"
+  },
+  {
+    q: "Какой недостаток возникает при постоянной работе на максимальной мощности передатчика?",
+    a: ["Быстрее садится аккумулятор и легче запеленговать", "Антенна начинает светиться ярким синим цветом", "Станция перестает принимать текстовые команды", "Уменьшается вес аккумуляторной батареи станции"],
+    correct: "Быстрее садится аккумулятор и легче запеленговать"
+  },
+  {
+    q: "Что означает режим защиты связи ППРЧ?",
+    a: ["Псевдослучайную перестройку рабочей частоты сигнала", "Полную проверку работоспособности всех кнопок", "Прямую передачу речи открытым текстом", "Постоянный поиск разряженных батарей питания"],
+    correct: "Псевдослучайную перестройку рабочей частоты сигнала"
+  },
+  {
+    q: "Как режим ППРЧ защищает радиосвязь от перехвата и подавления?",
+    a: ["Станция скачет по сотням частот в секунду", "Станция полностью отключает свою антенну", "Сигнал передается только по медным проводам", "Боец говорит шепотом в микрофон гарнитуры"],
+    correct: "Станция скачет по сотням частот в секунду"
+  },
+  {
+    q: "Что обозначает класс защиты корпуса IP67 или IP68?",
+    a: ["Полную защиту от пыли, грязи и воды", "Запрет на использование станции на улице", "Разрешение работать только в сухую погоду", "Наличие встроенного экрана из обычного стекла"],
+    correct: "Полную защиту от пыли, грязи и воды"
+  },
+  {
+    q: "К какому поколению средств связи относится радиостанция Р-187П1 «Азарт»?",
+    a: ["К шестому поколению цифровых радиостанций", "К первому поколению ламповых телеграфов", "К устаревшему поколению проводных телефонов", "К бытовым детским игрушечным рациям"],
+    correct: "К шестому поколению цифровых радиостанций"
+  },
+  {
+    q: "Какая примерная масса у носимой радиостанции Р-187П1 «Азарт»?",
+    a: ["Около половины килограмма (550 граммов)", "Более пятнадцати килограммов чистого железа", "Около тридцати килограммов в рюкзаке", "Ровно десять килограммов без батареи"],
+    correct: "Около половины килограмма (550 граммов)"
+  },
+  {
+    q: "Какая навигационная система встроена в радиостанцию «Азарт»?",
+    a: ["Спутниковая навигация ГЛОНАСС и GPS", "Только бумажный магнитный школьный компас", "Обычный барометр для измерения давления", "Механический шагомер на поясе бойца"],
+    correct: "Спутниковая навигация ГЛОНАСС и GPS"
+  },
+  {
+    q: "До скольких километров возрастает дальность станции «Азарт» при работе через ретранслятор?",
+    a: ["До сорока километров уверенной связи", "Максимум до ста метров по прямой", "Не более пятидесяти метров в поле", "Строго до десяти метров в здании"],
+    correct: "До сорока километров уверенной связи"
+  },
+  {
+    q: "Какое название носит носимая УКВ-радиостанция Р-168-0,5УМ?",
+    a: ["Тактическая радиостанция «Акведук»", "Космическая станция «Восток»", "Подводная лодка «Наутилус»", "Атомный ледокол «Арктика»"],
+    correct: "Тактическая радиостанция «Акведук»"
+  },
+  {
+    q: "Какую функцию поддерживает «Азарт», но не поддерживает базовая Р-168-0,5УМ «Акведук»?",
+    a: ["Передачу текстовых SMS и карт местности", "Работу от съемной аккумуляторной батареи", "Переключение рабочих каналов на корпусе", "Использование выносной штыревой антенны"],
+    correct: "Передачу текстовых SMS и карт местности"
+  },
+  {
+    q: "В каком соотношении обычно рассчитывается стандартное время автономной работы радиостанции?",
+    a: ["10% передача, 10% приём, 80% ожидание", "100% непрерывная передача на полной мощности", "50% выключенный экран и 50% зарядка", "90% передача и 10% выключенное питание"],
+    correct: "10% передача, 10% приём, 80% ожидание"
+  },
+  {
+    q: "Что означает симплексный режим работы переносной радиостанции?",
+    a: ["Передача и приём идут строго по очереди", "Оба бойца передают данные одновременно без помех", "Станция работает только на приём без передачи", "Сигнал передается исключительно по оптическому кабелю"],
+    correct: "Передача и приём идут строго по очереди"
+  },
+  {
+    q: "Что произойдет, если двое бойцов одновременно нажмут кнопку PTT на одном канале?",
+    a: ["В эфире возникнет помеха и сбой приёма", "Оба сообщения сложатся в одно четкое", "Дальность связи автоматически увеличится в десять раз", "Аккумуляторы обеих станций мгновенно зарядятся"],
+    correct: "В эфире возникнет помеха и сбой приёма"
+  },
+  {
+    q: "Что обязаны использовать бойцы в радиоэфире вместо настоящих имен и фамилий?",
+    a: ["Специальные секретные позывные («Сокол», «Беркут»)", "Свои домашние адреса и номера паспортов", "Названия любимых художественных фильмов и книг", "Номера личных банковских карт и телефонов"],
+    correct: "Специальные секретные позывные («Сокол», «Беркут»)"
+  },
+  {
+    q: "В чем заключается «правило трёх секунд» при работе на передачу?",
+    a: ["Передача должна быть максимально краткой и точной", "Кнопку тангенты нужно нажимать три раза подряд", "После каждого слова нужно молчать три минуты", "Станцию нужно выключать каждые три секунды"],
+    correct: "Передача должна быть максимально краткой и точной"
+  },
+  {
+    q: "Почему длительная непрерывная передача опасна для подразделения?",
+    a: ["Пеленгаторы противника быстро вычислят координаты бойца", "От длинной речи перегревается экран дисплея", "Кнопка тангенты может заклинить от нажатия", "Антенна перестает принимать сигналы спутников"],
+    correct: "Пеленгаторы противника быстро вычислят координаты бойца"
+  },
+  {
+    q: "Что предписывает бойцам режим «Радиомолчание»?",
+    a: ["Полный запрет на любое излучение в эфир", "Громкую непрерывную передачу сигналов тревоги", "Отправку коротких текстовых сообщений каждые пять минут", "Проверку связи со всеми соседними подразделениями"],
+    correct: "Полный запрет на любое излучение в эфир"
+  },
+  {
+    q: "Боец в глубоком овраге потерял сигнал на дисплее. Какое действие восстановит связь?",
+    a: ["Подняться выше из оврага с вертикальной антенной", "Положить радиостанцию экраном вниз на землю", "Вытащить аккумуляторную батарею на пять минут", "Перевести станцию в режим «Радиомолчание»"],
+    correct: "Подняться выше из оврага с вертикальной антенной"
+  }
+];
+
+/* =========================================================
+   РАНДОМИЗАЦИЯ И СЕССИЯ (20 ИЗ 40)
+   ========================================================= */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const sessionQuestions = shuffle(questionBank).slice(0, 20).map(item => {
+  const shuffledOptions = shuffle(item.a);
+  return {
+    q: item.q,
+    options: shuffledOptions,
+    correctIdx: shuffledOptions.indexOf(item.correct)
+  };
+});
+
+/* =========================================================
+   СОСТОЯНИЕ И ЛОГИКА STEP-BY-STEP АККОРДЕОНА
+   ========================================================= */
+let currentStep = 0;
+let score = 0;
+let isQuizFinished = false;
+let questionBurned = false;
+let isAnswering = false;
+
+const testScreen = document.getElementById("test-screen");
+const resultScreen = document.getElementById("result-screen");
+const blackoutShield = document.getElementById("blackout-shield");
+
+const qCounter = document.getElementById("q-counter");
+const pBar = document.getElementById("p-bar");
+const qText = document.getElementById("q-text");
+const optionsBox = document.getElementById("options-box");
+
+const stepQuestion = document.getElementById("step-question");
+const stepOptions = document.getElementById("step-options");
+const btnToOptions = document.getElementById("btn-to-options");
+const btnBackToQ = document.getElementById("btn-back-to-q");
+
+// Шаг 1 -> Шаг 2 (скрываем вопрос, открываем варианты)
+btnToOptions.addEventListener("click", () => {
+  if (isQuizFinished || questionBurned) return;
+  stepQuestion.classList.remove("active");
+  stepOptions.classList.add("active");
+});
+
+// Шаг 2 -> Шаг 1 (возврат к вопросу)
+btnBackToQ.addEventListener("click", () => {
+  if (isQuizFinished || questionBurned) return;
+  stepOptions.classList.remove("active");
+  stepQuestion.classList.add("active");
+});
+
+function loadQuestion() {
+  isAnswering = false;
+
+  // Всегда начинаем показ с Шага 1
+  stepOptions.classList.remove("active");
+  stepQuestion.classList.add("active");
+
+  const data = sessionQuestions[currentStep];
+  qCounter.textContent = `Вопрос ${currentStep + 1} из 20`;
+  pBar.style.width = `${(currentStep / 20) * 100}%`;
+  qText.textContent = data.q;
+
+  optionsBox.innerHTML = "";
+  const letters = ["А", "Б", "В", "Г"];
+
+  data.options.forEach((optText, index) => {
+    const card = document.createElement("div");
+    card.className = "option-item";
+    card.innerHTML = `
+      <div class="option-letter">${letters[index]}</div>
+      <div>${optText}</div>
+    `;
+
+    card.addEventListener("click", () => {
+      if (isAnswering || isQuizFinished || questionBurned) return;
+      isAnswering = true;
+      card.classList.add("tapped");
+      setTimeout(() => pickAnswer(index), 90);
+    });
+
+    optionsBox.appendChild(card);
+  });
+}
+
+function pickAnswer(index) {
+  if (isQuizFinished || questionBurned) return;
+
+  const data = sessionQuestions[currentStep];
+  if (index === data.correctIdx) {
+    score++;
+  }
+
+  nextStep();
+}
+
+function nextStep() {
+  currentStep++;
+  if (currentStep < 20) {
+    loadQuestion();
+  } else {
+    finishQuiz();
+  }
+}
+
+/* =========================================================
+   БЛЭКАУТ ПРИ СКРИНШОТЕ / ПОТЕРЕ ФОКУСА (BURN QUESTION)
+   ========================================================= */
+let isAppReady = false;
+// Задержка 1500 мс для исключения ложных срабатываний в QR-сканерах
+setTimeout(() => { isAppReady = true; }, 1500);
+
+function triggerBlackout() {
+  if (!isAppReady || isQuizFinished || questionBurned) return;
+
+  questionBurned = true;
+  blackoutShield.style.display = "flex";
+  qText.textContent = "";
+  optionsBox.innerHTML = "";
+}
+
+function handleFocusReturn() {
+  if (!questionBurned) return;
+
+  setTimeout(() => {
+    blackoutShield.style.display = "none";
+    questionBurned = false;
+    nextStep();
+  }, 1800);
+}
+
+window.addEventListener("blur", triggerBlackout);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) triggerBlackout();
+});
+window.addEventListener("focus", handleFocusReturn);
+
+window.addEventListener("keyup", (e) => {
+  if (e.key === "PrintScreen") {
+    triggerBlackout();
+    handleFocusReturn();
+  }
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "PrintScreen") {
+    e.preventDefault();
+    triggerBlackout();
+    handleFocusReturn();
+  }
+  if (
+    e.key === "F12" ||
+    ((e.ctrlKey || e.metaKey) && ["c", "u", "s", "p", "a"].includes(e.key.toLowerCase())) ||
+    ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))
+  ) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+document.addEventListener("dragstart", (e) => e.preventDefault());
+
+/* =========================================================
+   ШКАЛА ОЦЕНИВАНИЯ:
+   0–5 верных = 2 (неудовлетворительно)
+   6–11 верных = 3 (удовлетворительно)
+   12–16 верных = 4 (хорошо, от 12 вопросов)
+   17–20 верных = 5 (отлично)
+   ========================================================= */
+function finishQuiz() {
+  isQuizFinished = true;
+  testScreen.classList.remove("current");
+  resultScreen.classList.add("current");
+
+  const pct = Math.round((score / 20) * 100);
+  document.getElementById("score-text").textContent = `${score} из 20 верно`;
+  document.getElementById("percent-text").textContent = `${pct}% правильных ответов`;
+
+  const markCircle = document.getElementById("mark-circle");
+  const analysisText = document.getElementById("analysis-text");
+  markCircle.className = "mark-circle";
+
+  if (score >= 17) {
+    markCircle.classList.add("mark-5");
+    markCircle.textContent = "5";
+    analysisText.innerHTML = "<strong>Отличный результат!</strong> Вы прекрасно усвоили устройство, тактико-технические характеристики переносных радиостанций («Азарт», «Акведук») и правила безопасности работы в радиосети. Отличная подготовка!";
+  } else if (score >= 12) {
+    markCircle.classList.add("mark-4");
+    markCircle.textContent = "4";
+    analysisText.innerHTML = "<strong>Хороший результат.</strong> Порог в 12 правильных ответов пройден уверенно. Вы понимаете назначение основных модулей радиостанции и принцип симплексной связи, допущены лишь небольшие неточности в отдельных параметрах ТТХ.";
+  } else if (score >= 6) {
+    markCircle.classList.add("mark-3");
+    markCircle.textContent = "3";
+    analysisText.innerHTML = "<strong>Удовлетворительно.</strong> Базовое устройство станции понятно, но возникли трудности с режимом ППРЧ, правилом трёх секунд и отличиями радиостанции «Азарт». Рекомендуется повторить конспект.";
+  } else {
+    markCircle.classList.add("mark-2");
+    markCircle.textContent = "2";
+    analysisText.innerHTML = "<strong>Порог не пройден (5 и менее правильных ответов).</strong> Допущено много ошибок либо часть заданий сгорела при попытке фиксации экрана. Изучите конспект по переносным радиостанциям и пройдите тест заново.";
+  }
+}
+
+// Старт первого вопроса
+loadQuestion();
+</script>
+</body>
+</html>
